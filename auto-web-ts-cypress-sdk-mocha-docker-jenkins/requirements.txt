@@ -1,0 +1,3 @@
+pandas
+pillow>=4.0
+plotly

@@ -1,0 +1,19 @@
+pipeline {
+    agent any
+    triggers { 
+        parameterizedCron('''TZ=Asia/Kolkata\n30 22 * * 1-5 %branch=master;''') 
+    }
+    options {
+      ansiColor('xterm')
+ //     timestamps
+    }
+    stages {
+        stage('Build') {
+            steps {
+                sh "${env.WORKSPACE}/docker/jenkins_build.sh \
+                    ${env.WORKSPACE} \
+                    ${env.BUILD_NUMBER}"
+            }
+        }
+    }
+}

@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist/",
+    "noImplicitAny": true,
+    "module": "es6",
+    "target": "es5",
+    "jsx": "react",
+    "allowJs": true,
+    "lib": ["es5", "dom"],
+    "types": ["cypress", "node","cypress-xpath","cypress-wait-until","@cypress/grep"]
+  },
+  "include": ["node_modules/cypress", "cypress/**/*.ts","cypress/**/*.js","node_modules/*","**/*.ts"]
+}

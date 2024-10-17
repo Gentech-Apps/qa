@@ -1,0 +1,24 @@
+{
+  "name": "testutomation",
+  "version": "1.0.0",
+  "description": "Automation test",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx cypress open --config-file automation.config.ts"
+  },
+  "author": "Genesis Technologies",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/jest": "^29.5.11",
+    "cypress": "^13.6.3",
+    "cypress-mochawesome-reporter": "^3.8.1",
+    "cypress-wait-until": "^3.0.1",
+    "cypress-xpath": "^2.0.1",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@cypress/grep": "^4.0.1",
+    "chai-sorted": "^0.2.0",
+    "gmail-tester": "^1.3.8"
+  }
+}
