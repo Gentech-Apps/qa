@@ -1,0 +1,21 @@
+{
+  "name": "hrms-automation",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx playwright test"
+  },
+  "keywords": [],
+  "author": "genesis",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.34.3",
+    "@types/node": "^20.12.9"
+  },
+  "dependencies": {
+    "date-fns": "^3.6.0",
+    "faker": "^5.5.3",
+    "moment": "^2.29.4"
+  }
+}
