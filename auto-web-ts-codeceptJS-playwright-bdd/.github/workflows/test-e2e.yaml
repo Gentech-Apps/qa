@@ -1,0 +1,197 @@
+name: Test E2E
+on:
+  schedule:
+
+    - cron: '00 18 * * 1-5'
+
+  workflow_dispatch:
+    inputs:
+      TENANT:
+        type: string
+        description: "TENANT NAME"
+        required: true
+        default: "abc552"
+
+      STACK:
+        type: string
+        description: "STACK"
+        required: false
+        default: ""
+
+      EXECUTION_TAG:
+        type: string
+        description: "TEST EXECUTION TAG"
+        required: true
+        default: "Regression"
+
+      UPLOAD_TEST_RESULT_XRAY:
+        type: boolean
+        description: "UPLOAD TEST RESULT TO JIRA"
+        required: true
+        default: true
+
+      UPDATE_EXISTING_TEST_EXECUTION:
+        type: boolean
+        description: "UPDATE EXISTING TEST EXECUTION TICKET"
+        required: true
+        default: true
+
+      TEST_EXECUTION_ID:
+        type: string
+        description: "TEST EXECUTION TICKET ID"
+        required: true
+        default: "OD-GH78"
+
+      TEST_RUN:
+        type: choice
+        description: "TEST RUN TYPE"
+        required: true
+        default: "local"
+        options:
+          - local
+          - cloud
+
+      OS:
+        description: "OS"
+        required: true
+        default: "Windows 11"
+
+      BROWSER:
+        type: choice
+        description: "BROWSER"
+        required: true
+        default: "Chrome"
+        options:
+          - Chrome
+          - Firefox
+          - MicrosoftEdge
+          - Safari
+
+      BROWSER_VERSION:
+        description: "BROWSER VERSION"
+        required: true
+        default: "latest"
+
+env:
+  TENANT: ${{ inputs.TENANT || 'abc552' }}
+  STACK: ${{ inputs.STACK || '' }}
+  EXECUTION_TAG: ${{ inputs.EXECUTION_TAG || 'Regression' }}
+  UPLOAD_TEST_RESULT_XRAY: ${{ inputs.UPLOAD_TEST_RESULT_XRAY || 'true' }}
+  UPDATE_EXISTING_TEST_EXECUTION: ${{ inputs.UPDATE_EXISTING_TEST_EXECUTION || 'true' }}
+  TEST_EXECUTION_ID: ${{ inputs.TEST_EXECUTION_ID || 'OD-GH78' }}
+  TEST_RUN: ${{ inputs.TEST_RUN || 'local' }}
+  OS: ${{ inputs.OS || 'Windows 11' }}
+  BROWSER: ${{ inputs.BROWSER || 'Chrome' }}
+  BROWSER_VERSION: ${{ inputs.BROWSER_VERSION || 'latest' }}
+  LAMBDATEST_BUILD_NAME: Regression_${{ inputs.TENANT || 'abc552' }}_${{ github.run_number }}
+  TAG: ${{ github.run_number }}
+  TEST_E2E_LAMBDATEST_USERNAME: test.user
+  REPORT_NAME: testrun--${{ inputs.TENANT || 'abc552' }}-${{ inputs.STACK || '' }}--${{ inputs.TEST_EXECUTION_ID || 'OD-GH78' }}
+
+jobs:
+  Build_and_Test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Fetch secrets from Doppler
+        uses: dopplerhq/secrets-fetch-action@v1.1.2
+        id: doppler
+        with:
+          doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+          doppler-project: platform
+          doppler-config: dev
+
+      - name: Update stack to LowerCase
+        id: string
+        uses: ASzc/change-string-case-action@v1
+        with:
+          string: ${{ env.STACK }}
+
+      - if: github.event_name == 'workflow_dispatch' && env.STACK != ''
+        name: Get Last Commit ID
+        run: |
+          LAST_COMMIT=$(git rev-parse --short origin/${{ env.STACK }})
+          echo "COMMIT_ID=$LAST_COMMIT" >> $GITHUB_ENV
+          echo "STACK_LC=${{ steps.string.outputs.lowercase }}" >> $GITHUB_ENV
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Get Time
+        id: time
+        uses: nanzm/get-time-action@master
+        with:
+          timeZone: UTC+8
+          format: "YYYYMMDD-HHmm"
+
+      - name: Check and update URL
+        id: update_url
+        run: |
+          if [ "${{ github.event.inputs.STACK }}" == "" ]; then
+            echo "ENV_URL=https://${{ env.TENANT }}.abc.io" >> $GITHUB_ENV
+          else
+            echo "ENV_URL=https://${{ env.TENANT }}.${{ env.STACK_LC }}.abc.io" >> $GITHUB_ENV
+          fi
+
+      - name: Check and update Browser
+        id: update_browser
+        run: |
+          if [ "${{ github.event.inputs.TEST_RUN }}" == "local" ] && \
+            [ "${{ github.event.inputs.BROWSER }}" == "Chrome" ]; then
+            echo "BROWSER=chromium" >> $GITHUB_ENV
+          elif [ "${{ github.event.inputs.TEST_RUN }}" == "local" ] && \
+            [ "${{ github.event.inputs.BROWSER }}" == "Safari" ]; then
+            echo "BROWSER=webkit" >> $GITHUB_ENV
+          else
+            echo "BROWSER=${{ github.event.inputs.BROWSER }}" >> $GITHUB_ENV
+          fi
+
+      - name: Build Docker image
+        run: |
+          cd tests/e2e
+          docker build --no-cache --tag abc:v${{ env.TAG }} --file deploy/docker/Dockerfile .
+
+      - name: Run container
+        run: >-
+          docker run --rm --name abc-${{ env.TEST_RUN }} -e
+          TENANT_NAME="${{ env.TENANT }}" -e
+          ENV_URL="${{ env.ENV_URL }}" -e
+          TENANT_ADMIN_USER_NAME="${{ steps.doppler.outputs.TEST_E2E_ADMIN_USER_NAME }}" -e
+          TENANT_ADMIN_PASSWORD="${{ steps.doppler.outputs.TEST_E2E_ADMIN_PASSWORD }}" -e
+          LAMBDATEST_USERNAME="${{ env.TEST_E2E_LAMBDATEST_USERNAME }}" -e
+          LAMBDATEST_ACCESS_KEY="${{ steps.doppler.outputs.TEST_E2E_LAMBDATEST_ACCESS_KEY }}" -e
+          LAMBDATEST_PLATFORM="${{ env.OS }}" -e
+          EXECUTION_TAG="${{ env.EXECUTION_TAG }}" -e
+          UPLOAD_TEST_RESULT_XRAY="${{ env.UPLOAD_TEST_RESULT_XRAY }}" -e
+          UPDATE_EXISTING_TEST_EXECUTION="${{ env.UPDATE_EXISTING_TEST_EXECUTION }}" -e
+          TEST_EXECUTION_ID="${{ env.TEST_EXECUTION_ID }}" -e
+          BROWSER_NAME="${{ env.BROWSER }}" -e
+          MAILSLURP_ID="${{ steps.doppler.outputs.MAILSLURP_ID}}" -e
+          LAMBDATEST_BROWSER="${{ env.BROWSER }}" -e
+          LAMBDATEST_BROWSER_VERSION="${{ env.BROWSER_VERSION }}" -e
+          LAMBDATEST_BUILD_NAME="${{ env.TAG }}" -e
+          XRAY_CLIENT_ID="${{ steps.doppler.outputs.TEST_E2E_XRAY_CLIENT_ID }}" -e
+          XRAY_CLIENT_SECRETS="${{ steps.doppler.outputs.TEST_E2E_XRAY_CLIENT_SECRETS }}" -v
+          ./report:/app/output abc:v${{ env.TAG }} ${{ env.TEST_RUN }} ${{ env.EXECUTION_TAG }}
+        continue-on-error: true
+
+      - if: github.event_name == 'workflow_dispatch' && env.STACK != ''
+        name: Publish Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.REPORT_NAME }}--${{ env.COMMIT_ID }}--${{ steps.time.outputs.time }}
+          path: report
+          if-no-files-found: error
+          retention-days: 30
+
+      - if: github.event_name == 'workflow_dispatch' && env.STACK == ''
+        name: Publish Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: testrun--${{ env.TENANT }}--${{ env.TEST_EXECUTION_ID }}--${{ steps.time.outputs.time }}
+          path: report
+          if-no-files-found: error
+          retention-days: 30
