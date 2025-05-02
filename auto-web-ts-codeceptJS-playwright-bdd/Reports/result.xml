@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Mocha Tests" time="35.846" tests="1" failures="0">
+  <testsuite name="Root Suite" timestamp="2024-10-14T09:57:41" tests="0" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="Create new Template" timestamp="2024-10-14T09:57:41" tests="1" file="/Genesistest//features/template/OT-894.feature" time="35.839" failures="0">
+    <testcase name="Create new Template create new buyer portal template {&quot;templateName&quot;:&quot;Template1 Ray&quot;,&quot;label&quot;:&quot;Administrator&quot;,&quot;description&quot;:&quot;Product&quot;} @TEST_OT-894 @Regression1111 @Regression1 @template @smoke1 @smoke @dailyRegression" time="22.062" classname="create new buyer portal template {&quot;templateName&quot;:&quot;Template1 Ray&quot;,&quot;label&quot;:&quot;Administrator&quot;,&quot;description&quot;:&quot;Product&quot;} @TEST_OT-894 @Regression1111 @Regression1 @template @smoke1 @smoke @dailyRegression">
+    </testcase>
+  </testsuite>
+</testsuites>

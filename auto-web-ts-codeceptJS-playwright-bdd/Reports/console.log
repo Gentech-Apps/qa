@@ -1,0 +1,8 @@
+
+[0m[0m
+[0m  Create new Template[0m
+  [32m  [32m✔[39m[0m[90m create new buyer portal template {"templateName":"Template1 Ray","label":"Administrator","description":"Product"} @TEST_OT-894 @Regression1111 @Regression1 @template @smoke1 @smoke @dailyRegression[0m[31m (22062ms)[0m
+
+
+[92m [0m[32m 1 passing[0m[90m (36s)[0m
+
